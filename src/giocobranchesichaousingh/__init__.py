@@ -51,7 +51,11 @@ TOWER_IMAGES = {
     'rapid':  _load_tower_image('torre_rapid.png'),
     'sniper': _load_tower_image('torre_sniper.png'),
 }
-
+# DEBUG - aggiungi queste righe temporanee
+print("Cartella cercata:", Path(__file__).parent)
+print("basic trovata:", TOWER_IMAGES['basic'] is not None)
+print("rapid trovata:", TOWER_IMAGES['rapid'] is not None)
+print("sniper trovata:", TOWER_IMAGES['sniper'] is not None)
 def _load_projectile_image(filename):
     """Carica e scala l'immagine di un proiettile piccolo."""
     try:
