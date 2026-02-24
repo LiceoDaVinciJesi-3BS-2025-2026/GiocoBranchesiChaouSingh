@@ -4,6 +4,7 @@ def main() -> None:
 import pygame
 import math
 import random
+from pathlib import Path
 
 # Inizializzazione Pygame
 pygame.init()
