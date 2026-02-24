@@ -160,7 +160,7 @@ def create_projectile(x, y, target, damage, speed=8):
         'target': target,
         'damage': damage,
         'speed': speed,
-        'radius': 4
+        'radius': 4,
         'type': tower_type 
     }
 
