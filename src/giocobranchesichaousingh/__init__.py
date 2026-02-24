@@ -36,6 +36,36 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(None, 32)
 small_font = pygame.font.Font(None, 24)
 
+# ── CARICAMENTO IMMAGINI TORRI ──────────────────────────────────────────────
+def _load_tower_image(filename):
+    """Carica e scala l'immagine di una torre; ritorna None se il file manca."""
+    try:
+        path = Path(__file__).parent / filename
+        return pygame.transform.scale(pygame.image.load(str(path)).convert_alpha(), (80, 80))
+    except Exception:
+        return None
+
+TOWER_IMAGES = {
+    'basic':  _load_tower_image('torre_basic.png'),
+    'rapid':  _load_tower_image('torre_rapid.png'),
+    'sniper': _load_tower_image('torre_sniper.png'),
+}
+
+def _load_projectile_image(filename):
+    """Carica e scala l'immagine di un proiettile piccolo."""
+    try:
+        path = Path(__file__).parent / filename
+        return pygame.transform.scale(pygame.image.load(str(path)).convert_alpha(), (50, 50))
+    except Exception:
+        return None
+
+PROJECTILE_IMAGES = {
+    'basic':  _load_projectile_image('freccia_basic.png'),
+    'rapid':  _load_projectile_image('freccia_rapid.png'),
+    'sniper': _load_projectile_image('freccia_sniper.png'),
+}
+# ────────────────────────────────────────────────────────────────────────────
+
 # Percorso dei nemici (coordinate griglia)
 PATH = [
     (0, 5), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
