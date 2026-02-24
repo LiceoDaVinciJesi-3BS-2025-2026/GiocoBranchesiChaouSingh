@@ -157,6 +157,7 @@ def create_projectile(x, y, target, damage, speed=8):
         'damage': damage,
         'speed': speed,
         'radius': 4
+        'type': tower_type 
     }
 
 
@@ -180,9 +181,13 @@ def move_projectile(projectile):
 
 
 def draw_projectile(screen, projectile):
-    """Disegna un proiettile"""
-    pygame.draw.circle(screen, YELLOW, (int(projectile['x']), int(projectile['y'])), 
-                      projectile['radius'])
+    img = PROJECTILE_IMAGES.get(projectile.get('type', 'basic'))
+    if img:
+        rect = img.get_rect(center=(int(projectile['x']), int(projectile['y'])))
+        screen.blit(img, rect)
+    else:
+        pygame.draw.circle(screen, YELLOW, (int(projectile['x']), int(projectile['y'])),
+                           projectile['radius'])
 
 
 # Funzioni per le torri
@@ -241,24 +246,26 @@ def can_tower_shoot(tower):
 
 
 def tower_shoot(tower):
-    """Fa sparare la torre e ritorna un proiettile"""
     tower['cooldown'] = tower['fire_rate']
-    return create_projectile(tower['x'], tower['y'], tower['target'], tower['damage'])
+    return create_projectile(tower['x'], tower['y'], tower['target'],
+                             tower['damage'], tower_type=tower['type'])
 
 
 def draw_tower(screen, tower, show_range=False):
-    """Disegna una torre"""
-    # Raggio (opzionale)
     if show_range:
-        pygame.draw.circle(screen, (*tower['color'], 50), (int(tower['x']), int(tower['y'])), 
-                         tower['range'], 1)
+        pygame.draw.circle(screen, (*tower['color'], 50), 
+                         (int(tower['x']), int(tower['y'])), tower['range'], 1)
     
-    # Torre
-    size = 20
-    pygame.draw.rect(screen, tower['color'], 
-                    (tower['x'] - size//2, tower['y'] - size//2, size, size))
-    pygame.draw.rect(screen, BLACK, 
-                    (tower['x'] - size//2, tower['y'] - size//2, size, size), 2)
+    img = TOWER_IMAGES.get(tower['type'])
+    if img:
+        rect = img.get_rect(center=(int(tower['x']), int(tower['y'])))
+        screen.blit(img, rect)
+    else:
+        size = 20
+        pygame.draw.rect(screen, tower['color'],
+                        (tower['x'] - size//2, tower['y'] - size//2, size, size))
+        pygame.draw.rect(screen, BLACK,
+                        (tower['x'] - size//2, tower['y'] - size//2, size, size), 2)
 
 
 # Funzioni di gioco
