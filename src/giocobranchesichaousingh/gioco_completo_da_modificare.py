@@ -80,16 +80,32 @@ VERDE_CHIARO = (0, 255, 0)          # Verde chiaro per validazione positiva
 #
 # Se un nemico raggiunge la fine del percorso, il giocatore perde una vita.
 PERCORSO_GRIGLIA = [
-    # Parte orizzontale iniziale - da sinistra verso destra
-    (0, 5), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
-    # Prima curva - sale verso l'alto
-    (6, 4), (6, 3), (6, 2), (6, 1),
-    # Parte orizzontale centrale - continua verso destra
-    (7, 1), (8, 1), (9, 1), (10, 1),
-    # Seconda curva - scende verso il basso
-    (10, 2), (10, 3), (10, 4), (10, 5), (10, 6), (10, 7),
-    # Parte finale - esce dallo schermo a destra
-    (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7)
+    # Inizio da sinistra (parte alta)
+    (0, 4), (1, 4), (2, 4),
+
+    # Scende verso il basso
+    (2, 5), (2, 6), (2, 7), (2, 8),
+
+    # Va verso destra
+    (3, 8), (4, 8), (5, 8), (6, 8), (7, 8),
+
+    # Scende ancora
+    (7, 9), (7, 10),
+
+    # Va verso destra
+    (8, 10), (9, 10), (10, 10), (11, 10),
+
+    # Sale verso l’alto
+    (11, 9), (11, 8), (11, 7), (11, 6), (11, 5), (11, 4),
+
+    # Va verso destra
+    (12, 4), (13, 4), (14, 4),
+
+    # Scende
+    (14, 5), (14, 6), (14, 7), (14, 8),
+
+    # Uscita verso destra
+    (15, 8), (16, 8)
 ]
 
 # -------------------------
