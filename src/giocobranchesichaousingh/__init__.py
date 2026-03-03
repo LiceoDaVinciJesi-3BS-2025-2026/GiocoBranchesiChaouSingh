@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 """
 =============================================================================
 TOWER DEFENSE - GIOCO COMPLETO
@@ -1159,3 +1160,8 @@ if __name__ == "__main__":
 
 
 
+=======
+def main() -> None:
+    
+     
+>>>>>>> Stashed changes
