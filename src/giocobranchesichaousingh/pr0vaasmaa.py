@@ -12,14 +12,14 @@ import os
 # CONFIGURAZIONE
 # =============================================================================
 
-LARGHEZZA_SCHERMO  = 1350
-ALTEZZA_SCHERMO    = 694
-LARGHEZZA_GIOCO    = 1130
+LARGHEZZA_SCHERMO  = 1144
+ALTEZZA_SCHERMO    = 700
+LARGHEZZA_GIOCO    = 924
 LARGHEZZA_PANNELLO = 220
 
-DIMENSIONE_CELLA = 30
-CELLE_LARGHE = 38
-CELLE_ALTE   = 21
+DIMENSIONE_CELLA = 42
+CELLE_LARGHE = 22
+CELLE_ALTE   = 16
 
 GRIGIO       = (128, 128, 128)
 NERO         = (0, 0, 0)
@@ -79,7 +79,7 @@ def carica_immagini():
             return None
 
     immagini = {}
-    immagini['sfondo_gioco']       = carica_sfondo('sfondo.png', (LARGHEZZA_GIOCO, ALTEZZA_SCHERMO))
+    immagini['sfondo_gioco']       = carica_sfondo('srondo.png', (LARGHEZZA_GIOCO, ALTEZZA_SCHERMO))
     immagini['schermata_iniziale'] = carica_sfondo('schermata_iniziale.png', (LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
 
     for tipo in ('goblin', 'orco', 'demone'):
@@ -411,72 +411,176 @@ def aggiorna_gioco(stato):
 # RENDERING GIOCO
 # =============================================================================
 
-def disegna_sfondo(schermo, immagini):
-    sfondo = immagini.get('sfondo_gioco')
-    if sfondo:
-        schermo.blit(sfondo, (0, 0))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+def disegna_sfondo(schermo):
+    """Disegna sfondo e griglia"""
+    schermo.fill(VERDE_ERBA)
+    
+    for x in range(CELLE_LARGHE):
+        for y in range(CELLE_ALTE):
+            rettangolo = pygame.Rect(x * DIMENSIONE_CELLA, y * DIMENSIONE_CELLA,
+                                    DIMENSIONE_CELLA, DIMENSIONE_CELLA)
+            #pygame.draw.rect(schermo, VERDE_SCURO, rettangolo, 1)
+
+
+def disegna_percorso(schermo):
+    """Disegna il sentiero"""
+    for gx, gy in PERCORSO_GRIGLIA:
+        rettangolo = pygame.Rect(gx * DIMENSIONE_CELLA, gy * DIMENSIONE_CELLA,
+                                DIMENSIONE_CELLA, DIMENSIONE_CELLA)
+        #pygame.draw.rect(schermo, MARRONE_SENTIERO, rettangolo)
+
+
+def disegna_preview_torre(schermo, griglia_x, griglia_y, valida):
+    """Disegna preview semi-trasparente della torre"""
+    colore = VERDE_CHIARO if valida else ROSSO
+    
+    superficie = pygame.Surface((DIMENSIONE_CELLA, DIMENSIONE_CELLA))
+    superficie.set_alpha(100)
+    superficie.fill(colore)
+    
+    schermo.blit(superficie, (griglia_x * DIMENSIONE_CELLA, griglia_y * DIMENSIONE_CELLA))
+
+
+def disegna_pannello_ui(schermo, soldi, vite, ondata):
+    """Disegna il pannello laterale"""
+    pygame.draw.rect(schermo, GRIGIO, (1150, 0, 200, ALTEZZA_SCHERMO))
+    
+    font_grande = pygame.font.Font(None, 32)
+    
+    testo_soldi = font_grande.render(f"Soldi: ${soldi}", True, GIALLO)
+    testo_vite = font_grande.render(f"Vite: {vite}", True, ROSSO)
+    testo_ondata = font_grande.render(f"Ondata: {ondata}/10", True, BIANCO)
+    
+
+    schermo.blit(testo_soldi, (1170, 10))
+    schermo.blit(testo_vite, (1170, 40))
+    schermo.blit(testo_ondata, (1170, 70))
+
+
+def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato):
+    """Disegna pulsante per comprare torre"""
+    if selezionato:
+        colore = GIALLO
+    elif soldi >= costo:
+        colore = VERDE_CHIARO
     else:
-        schermo.fill(VERDE_ERBA)
-        for x in range(CELLE_LARGHE):
-            for y in range(CELLE_ALTE):
-                pygame.draw.rect(schermo, VERDE_SCURO,
-                    pygame.Rect(x*DIMENSIONE_CELLA, y*DIMENSIONE_CELLA,
-                                DIMENSIONE_CELLA, DIMENSIONE_CELLA), 1)
+        colore = GRIGIO
+    
+    rettangolo = pygame.Rect(820, pos_y, 150, 60)
+    rettangolo = pygame.Rect(1170, pos_y, 150, 60)
+    pygame.draw.rect(schermo, colore, rettangolo)
+    pygame.draw.rect(schermo, NERO, rettangolo, 2)
+    
+    font = pygame.font.Font(None, 24)
+    nome = tipo_torre.capitalize()
+    testo_nome = font.render(nome, True, NERO)
+    testo_costo = font.render(f"${costo}", True, NERO)
+    
+    schermo.blit(testo_nome, (rettangolo.x + 10, rettangolo.y + 10))
+    schermo.blit(testo_costo, (rettangolo.x + 10, rettangolo.y + 35))
+    
+    return rettangolo
 
-def disegna_pannello(schermo, stato, immagini, font_grande, font_medio, font_piccolo):
-    X = LARGHEZZA_GIOCO
-    pygame.draw.rect(schermo, (50,50,60), (X, 0, LARGHEZZA_PANNELLO, ALTEZZA_SCHERMO))
-    pygame.draw.rect(schermo, (70,70,85), (X+2, 2, LARGHEZZA_PANNELLO-4, ALTEZZA_SCHERMO-4))
-    pygame.draw.line(schermo, (100,100,120), (X, 0), (X, ALTEZZA_SCHERMO), 2)
 
-    t = font_grande.render("TOWER DEFENSE", True, GIALLO)
-    schermo.blit(t, (X + (LARGHEZZA_PANNELLO - t.get_width())//2, 8))
-    pygame.draw.line(schermo, GIALLO, (X+10, 36), (X+LARGHEZZA_PANNELLO-10, 36), 1)
-
-    img_m = immagini.get('moneta')
-    if img_m: schermo.blit(img_m, (X+10, 44))
-    schermo.blit(font_grande.render(f"${stato['soldi']}", True, GIALLO),           (X+38, 44))
-    schermo.blit(font_grande.render(f"♥ {stato['vite']}", True, ROSSO),            (X+10, 72))
-    schermo.blit(font_grande.render(f"Ondata {stato['ondata']}/10", True, BIANCO), (X+10, 100))
-    schermo.blit(font_grande.render(f"Punti: {calcola_punteggio(stato)}", True, (255,165,0)), (X+10, 128))
-    schermo.blit(font_piccolo.render("nemici+ondate+vite", True, (160,160,160)),    (X+10, 158))
-
-def disegna_pulsanti_torri(schermo, stato, immagini, font):
-    pulsanti = {}
-    X = LARGHEZZA_GIOCO
-    posizioni = [('arciere', 185), ('magia', 258), ('cannone', 331)]
-    nomi = {'arciere': 'Arciere', 'magia': 'Magia', 'cannone': 'Cannone'}
-    for tipo, pos_y in posizioni:
-        costo = COSTI_TORRI[tipo]
-        sel = stato['torre_selezionata'] == tipo
-        if sel:
-            cs, cb = (200,170,0), GIALLO
-        elif stato['soldi'] >= costo:
-            cs, cb = (40,80,40), VERDE_CHIARO
-        else:
-            cs, cb = (60,60,60), GRIGIO
-        r = pygame.Rect(X+10, pos_y, 200, 64)
-        pygame.draw.rect(schermo, cs, r, border_radius=6)
-        pygame.draw.rect(schermo, cb, r, 2, border_radius=6)
-        img = immagini.get(f'torre_{tipo}')
-        if img: schermo.blit(pygame.transform.scale(img, (40,40)), (r.x+6, r.y+12))
-        ct = BIANCO if stato['soldi'] >= costo else (130,130,130)
-        schermo.blit(font.render(nomi[tipo], True, ct), (r.x+52, r.y+12))
-        schermo.blit(font.render(f"${costo}", True, GIALLO if stato['soldi'] >= costo else (130,130,130)),
-                     (r.x+52, r.y+38))
-        pulsanti[tipo] = r
-    return pulsanti
-
-def disegna_pulsante_ondata(schermo, ondata_in_corso, font):
+def disegna_pulsante_ondata(schermo, ondata_in_corso):
+    """Disegna pulsante per avviare ondata"""
     if ondata_in_corso:
         return None
-    X = LARGHEZZA_GIOCO
-    r = pygame.Rect(X+10, 415, 200, 54)
-    pygame.draw.rect(schermo, (20,80,160), r, border_radius=8)
-    pygame.draw.rect(schermo, BLU, r, 2, border_radius=8)
-    t = font.render("▶  Avvia Ondata", True, BIANCO)
-    schermo.blit(t, (r.x + (r.width-t.get_width())//2, r.y + (r.height-t.get_height())//2))
-    return r
+    
+    rettangolo = pygame.Rect(820, 350, 150, 60)
+    rettangolo = pygame.Rect(1170, 350, 150, 60)
+    pygame.draw.rect(schermo, BLU, rettangolo)
+    pygame.draw.rect(schermo, NERO, rettangolo, 2)
+    
+    font = pygame.font.Font(None, 24)
+    testo = font.render("Avvia Ondata", True, BIANCO)
+    schermo.blit(testo, (rettangolo.x + 15, rettangolo.y + 20))
+    
+    return rettangolo
+
+
+def disegna_game_over(schermo, vittoria):
+    """Disegna schermata game over"""
+    overlay = pygame.Surface((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
+    overlay.set_alpha(128)
+    overlay.fill(NERO)
+    schermo.blit(overlay, (0, 0))
+    
+    font_grande = pygame.font.Font(None, 64)
+    font_piccolo = pygame.font.Font(None, 32)
+    
+    if vittoria:
+        testo_principale = font_grande.render("VITTORIA!", True, GIALLO)
+    else:
+        testo_principale = font_grande.render("GAME OVER", True, ROSSO)
+    
+    testo_riavvio = font_piccolo.render("Premi R per ricominciare", True, BIANCO)
+    
+    schermo.blit(testo_principale, 
+                (LARGHEZZA_SCHERMO // 2 - testo_principale.get_width() // 2, 
+                 ALTEZZA_SCHERMO // 2 - 50))
+    schermo.blit(testo_riavvio, 
+                (LARGHEZZA_SCHERMO // 2 - testo_riavvio.get_width() // 2, 
+                 ALTEZZA_SCHERMO // 2 + 20))
+
+
+def disegna_tutto(schermo, stato, pulsanti_torri, pulsante_ondata):
+    """Disegna tutto sullo schermo"""
+    # Sfondo
+    disegna_sfondo(schermo)
+    disegna_percorso(schermo)
+    
+    # Torri
+    mostra_raggio = stato['torre_selezionata'] is not None
+    for torre in stato['torri']:
+        disegna_torre(schermo, torre, mostra_raggio)
+    
+    # Nemici
+    for nemico in stato['nemici']:
+        disegna_nemico(schermo, nemico)
+    
+    # Proiettili
+    for proiettile in stato['proiettili']:
+        disegna_proiettile(schermo, proiettile)
+    
+    # UI
+    disegna_pannello_ui(schermo, stato['soldi'], stato['vite'], stato['ondata'])
+    
+    # Preview torre
+    if stato['torre_selezionata']:
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if mouse_x < 800:
+            griglia_x, griglia_y = pixel_a_griglia(mouse_x, mouse_y)
+            valida = puo_piazzare_torre(stato, griglia_x, griglia_y)
+            disegna_preview_torre(schermo, griglia_x, griglia_y, valida)
+    
+    # Game over
+    if stato['game_over']:
+        disegna_game_over(schermo, stato['vittoria'])
+
+
+
+
+
+
+
+
+
+
 
 def disegna_legenda(schermo, font):
     X = LARGHEZZA_GIOCO
@@ -491,42 +595,6 @@ def disegna_preview(schermo, stato, gx, gy):
     s.fill((*colore, 100))
     schermo.blit(s, (gx*DIMENSIONE_CELLA, gy*DIMENSIONE_CELLA))
 
-def disegna_game_over(schermo, stato, classifica, font_grande, font_medio, font_piccolo):
-    overlay = pygame.Surface((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO), pygame.SRCALPHA)
-    overlay.fill((0,0,0,160))
-    schermo.blit(overlay, (0, 0))
-
-    cx = LARGHEZZA_SCHERMO // 2
-    if stato['vittoria']:
-        t_titolo = font_grande.render("VITTORIA!", True, GIALLO)
-        colore_box = (60,100,0)
-    else:
-        t_titolo = font_grande.render("GAME OVER", True, ROSSO)
-        colore_box = (100,0,0)
-
-    box = pygame.Rect(cx-250, 60, 500, 560)
-    pygame.draw.rect(schermo, colore_box, box, border_radius=14)
-    pygame.draw.rect(schermo, BIANCO, box, 3, border_radius=14)
-
-    schermo.blit(t_titolo, (cx - t_titolo.get_width()//2, 80))
-    t_score = font_medio.render(f"Punteggio: {stato['punteggio_finale']}", True, (255,165,0))
-    schermo.blit(t_score, (cx - t_score.get_width()//2, 160))
-    t_det = font_piccolo.render("nemici x100 + ondate x500 + vite x200 + vittoria 2000", True, (180,180,180))
-    schermo.blit(t_det, (cx - t_det.get_width()//2, 200))
-
-    pygame.draw.line(schermo, GIALLO, (cx-180, 240), (cx+180, 240), 2)
-    t_cls = font_medio.render("MIGLIORI PUNTEGGI", True, GIALLO)
-    schermo.blit(t_cls, (cx - t_cls.get_width()//2, 252))
-
-    medaglie  = ["1.", "2.", "3.", "4.", "5."]
-    colori_c  = [GIALLO, (192,192,192), (205,127,50), BIANCO, BIANCO]
-    for i, score in enumerate(classifica[:5]):
-        t = font_medio.render(f"{medaglie[i]}  {score}", True, colori_c[i])
-        schermo.blit(t, (cx - t.get_width()//2, 290 + i*36))
-
-    pygame.draw.line(schermo, GRIGIO, (cx-180, 490), (cx+180, 490), 1)
-    t_r = font_piccolo.render("Premi  R  per ricominciare", True, BIANCO)
-    schermo.blit(t_r, (cx - t_r.get_width()//2, 502))
 
 def disegna_gioco(schermo, stato, immagini, classifica, font_grande, font_medio, font_piccolo):
     """Disegna l'intera schermata di gioco. Ritorna (pulsanti_torri, pulsante_ondata)."""
@@ -754,3 +822,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

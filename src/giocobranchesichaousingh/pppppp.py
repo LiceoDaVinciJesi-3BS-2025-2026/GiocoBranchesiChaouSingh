@@ -30,17 +30,19 @@ import math
 # Lo schermo del gioco è diviso in due parti:
 # - Parte sinistra (800px): campo di gioco con la griglia
 # - Parte destra (200px): pannello UI con informazioni e pulsanti
-LARGHEZZA_SCHERMO = 1000  # Larghezza totale della finestra
-ALTEZZA_SCHERMO = 490     # Altezza totale della finestra
+#LARGHEZZA_SCHERMO = 1000  # Larghezza totale della finestra
+#ALTEZZA_SCHERMO = 700     # Altezza totale della finestra
+LARGHEZZA_SCHERMO = 1350  # Larghezza totale della finestra
+ALTEZZA_SCHERMO = 694     # Altezza totale della finestra
 
 # -------------------------
 # GRIGLIA DI GIOCO
 # -------------------------
 # Il campo di gioco è diviso in una griglia di celle quadrate.
-# Le torri vengono piazzate nelle celle, i nemici si muovono lungo le celle.
-DIMENSIONE_CELLA = 29   # Ogni cella è 50x50 pixel
-CELLE_LARGHE = 27       # 16 celle in orizzontale (16 * 50 = 800px)
-CELLE_ALTE = 17         # 12 celle in verticale (12 * 50 = 600px)
+# Le torri vengono          # 12 celle in verticale (12 * 50 = 600px)
+DIMENSIONE_CELLA = 30   # Ogni cella è 50x50 pixel
+CELLE_LARGHE = 38       # 16 celle in orizzontale (16 * 50 = 800px)
+CELLE_ALTE = 23        # 12 celle in verticale (12 * 50 = 600px)
 
 # -------------------------
 # COLORI
@@ -48,6 +50,9 @@ CELLE_ALTE = 17         # 12 celle in verticale (12 * 50 = 600px)
 # Tutti i colori sono definiti come tuple RGB (Red, Green, Blue)
 # Ogni valore va da 0 a 255
 # Esempio: (255, 0, 0) = rosso puro, (0, 255, 0) = verde puro
+VERDE_ERBA = (34, 139, 34)          # Verde scuro per l'erba del campo
+VERDE_SCURO = (0, 100, 0)           # Verde più scuro per le linee della griglia
+MARRONE_SENTIERO = (139, 90, 43)    # Marrone per il sentiero dei nemici
 GRIGIO = (128, 128, 128)            # Grigio per il pannello UI
 NERO = (0, 0, 0)                    # Nero per bordi e testo
 BIANCO = (255, 255, 255)            # Bianco per testo chiaro
@@ -58,6 +63,7 @@ ROSSO = (220, 20, 60)               # Rosso per nemici orchi e testo vite
 GIALLO = (255, 215, 0)              # Giallo per testo soldi e selezione
 VERDE_CHIARO = (0, 255, 0)          # Verde chiaro per validazione positiva
 
+
 pygame.init()
 schermo = pygame.display.set_mode((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
 pygame.display.set_caption("Tower Defense")
@@ -65,8 +71,8 @@ clock = pygame.time.Clock()
 
 
 global sfondo_img
-sfondo_img = pygame.image.load("srondo.png").convert()
-sfondo_img = pygame.transform.scale(sfondo_img, (800, ALTEZZA_SCHERMO))
+sfondo_img = pygame.image.load("sfondo.png").convert()
+sfondo_img = pygame.transform.scale(sfondo_img, (1147, ALTEZZA_SCHERMO))
 
 # -------------------------
 # PERCORSO DEI NEMICI
@@ -95,30 +101,25 @@ PERCORSO_GRIGLIA = [
     (2, 5), (2, 6), (2, 7), (2, 8),
 
     # Va verso destra
-    (3, 8), (4, 8), (5, 8), (6, 8), (7, 8),(8, 8),
+    (3, 8), (4, 8), (5, 8), (6, 8), (7, 8),
 
     # Scende ancora
-    (8, 9), (8, 10), (8, 11), (8, 12), (8, 13), (8, 14),
+    (7, 9), (7, 10),
 
     # Va verso destra
-    (9, 14), (10, 14), (11, 14), (12, 14), (13, 14), (14, 14), (15, 14),
+    (8, 10), (9, 10), (10, 10), (11, 10),
 
     # Sale verso l’alto
-    (15, 13), (15, 12), (15, 11), (15, 10), (15, 9), (15, 8),
+    (11, 9), (11, 8), (11, 7), (11, 6), (11, 5), (11, 4),
 
     # Va verso destra
-    (14, 8), (13, 8),
-    
-    
-    (13, 7), (13, 6), (13, 5), (13, 4), (13, 3), (13, 2),
-    
-    (14, 2), (15, 2), (16, 2), (17, 2),(18, 2), (19, 2),
-    
-    (19, 3), (19, 4), (19, 5), (19, 6), (19, 7), (19, 8),
-    
-    (20, 8), (21, 8), (22, 8), (23, 8), (24, 8)
+    (12, 4), (13, 4), (14, 4),
 
+    # Scende
+    (14, 5), (14, 6), (14, 7), (14, 8),
 
+    # Uscita verso destra
+    (15, 8), (16, 8)
 ]
 
 # -------------------------
@@ -194,90 +195,21 @@ FPS = 60  # Il gioco gira a 60 frame per secondo
 # - PIXEL: coordinate precise in pixel sullo schermo
 
 def griglia_a_pixel(griglia_x, griglia_y):
-    """
-    Converte coordinate GRIGLIA in coordinate PIXEL (centro della cella).
-    
-    Perché serve?
-    - La griglia usa numeri interi semplici come (5, 3)
-    - Ma per disegnare sullo schermo servono coordinate pixel precise
-    - Questa funzione fa la conversione
-    
-    Come funziona?
-    - Moltiplica per DIMENSIONE_CELLA (50) per trovare l'angolo della cella
-    - Aggiunge metà dimensione (25) per centrare nel mezzo della cella
-    
-    Esempio:
-        griglia (5, 3) diventa:
-        x = 5 * 50 + 25 = 275 pixel
-        y = 3 * 50 + 25 = 175 pixel
-    
-    Parametri:
-        griglia_x: coordinata x nella griglia (0-15)
-        griglia_y: coordinata y nella griglia (0-11)
-    
-    Ritorna:
-        tupla (pixel_x, pixel_y) con le coordinate in pixel
-    """
+
     pixel_x = griglia_x * DIMENSIONE_CELLA + DIMENSIONE_CELLA // 2
     pixel_y = griglia_y * DIMENSIONE_CELLA + DIMENSIONE_CELLA // 2
     return (pixel_x, pixel_y)
 
 
 def pixel_a_griglia(pixel_x, pixel_y):
-    """
-    Converte coordinate PIXEL in coordinate GRIGLIA.
-    
-    Perché serve?
-    - Quando il giocatore clicca col mouse, otteniamo coordinate pixel
-    - Ma dobbiamo sapere in quale cella della griglia ha cliccato
-    - Questa funzione fa la conversione inversa
-    
-    Come funziona?
-    - Divide per DIMENSIONE_CELLA (50)
-    - L'operatore // fa una divisione intera (scarta la parte decimale)
-    
-    Esempio:
-        pixel (275, 175) diventa:
-        x = 275 // 50 = 5
-        y = 175 // 50 = 3
-        
-    Nota: Anche se clicchi a (276, 178) o (249, 151), 
-          finirai sempre nella stessa cella!
-    
-    Parametri:
-        pixel_x: coordinata x in pixel
-        pixel_y: coordinata y in pixel
-    
-    Ritorna:
-        tupla (griglia_x, griglia_y) con le coordinate nella griglia
-    """
+  
     griglia_x = pixel_x // DIMENSIONE_CELLA
     griglia_y = pixel_y // DIMENSIONE_CELLA
     return (griglia_x, griglia_y)
 
 
 def ottieni_percorso_pixel():
-    """
-    Converte tutto il percorso da coordinate griglia a coordinate pixel.
-    
-    Perché serve?
-    - Il percorso è definito in coordinate griglia (più facile da editare)
-    - Ma i nemici si muovono in pixel (movimento fluido)
-    - Questa funzione converte tutto il percorso una volta sola
-    
-    Come funziona?
-    - Prende ogni punto del PERCORSO_GRIGLIA
-    - Lo converte in pixel usando griglia_a_pixel()
-    - Crea una nuova lista con tutti i punti convertiti
-    
-    Esempio:
-        PERCORSO_GRIGLIA = [(0, 5), (1, 5), (2, 5), ...]
-        diventa
-        [(25, 275), (75, 275), (125, 275), ...]
-    
-    Ritorna:
-        lista di tuple (x, y) in coordinate pixel
-    """
+
     return [griglia_a_pixel(x, y) for x, y in PERCORSO_GRIGLIA]
 
 
@@ -288,58 +220,7 @@ def ottieni_percorso_pixel():
 # Ogni ondata è più difficile della precedente.
 
 def calcola_statistiche_nemici(ondata):
-    """
-    Calcola le statistiche dei nemici in base al numero dell'ondata.
-    
-    IL GIOCO HA 3 FASI DI DIFFICOLTÀ:
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 1 - TUTORIAL (Ondate 1-3)                            │
-    │ Nemici: GOBLIN                                              │
-    │ - Vita base: 50 HP                                          │
-    │ - Incremento: +20 HP per ondata                             │
-    │ - Velocità: lenta (1.0 pixel/frame base)                    │
-    │ - Ricompensa: $20 base                                      │
-    │ Risultato: Ondata 1 = 70 HP, Ondata 3 = 110 HP             │
-    └─────────────────────────────────────────────────────────────┘
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 2 - DIFFICOLTÀ MEDIA (Ondate 4-7)                    │
-    │ Nemici: ORCHI                                               │
-    │ - Vita base: 80 HP                                          │
-    │ - Incremento: +25 HP per ondata                             │
-    │ - Velocità: media (1.2 pixel/frame base)                    │
-    │ - Ricompensa: $30 base                                      │
-    │ Risultato: Ondata 4 = 180 HP, Ondata 7 = 255 HP            │
-    └─────────────────────────────────────────────────────────────┘
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 3 - DIFFICOLTÀ ALTA (Ondate 8-10)                    │
-    │ Nemici: DEMONI                                              │
-    │ - Vita base: 120 HP                                         │
-    │ - Incremento: +30 HP per ondata                             │
-    │ - Velocità: veloce (1.4 pixel/frame base)                   │
-    │ - Ricompensa: $40 base                                      │
-    │ Risultato: Ondata 8 = 360 HP, Ondata 10 = 420 HP           │
-    └─────────────────────────────────────────────────────────────┘
-    
-    NOTA SULLA VELOCITÀ:
-    - Ogni ondata aumenta la velocità di +0.1 pixel/frame
-    - Ma c'è un limite massimo di 3.0 pixel/frame
-    - Altrimenti i nemici diventerebbero impossibili da colpire!
-    
-    NOTA SULLA RICOMPENSA:
-    - Ogni ondata aumenta la ricompensa di +$5
-    - Questo permette al giocatore di comprare torri migliori
-    - È un sistema di progressione bilanciato
-    
-    Parametri:
-        ondata: numero dell'ondata corrente (1-10)
-    
-    Ritorna:
-        tupla con (tipo, salute, velocità, ricompensa)
-        Esempio: ('goblin', 70, 1.1, 25)
-    """
+
     # FASE 1: Goblin (ondate 1-3)
     if ondata <= 3:
         tipo = 'goblin'
@@ -374,42 +255,7 @@ def calcola_statistiche_nemici(ondata):
 
 
 def calcola_numero_nemici(ondata):
-    """
-    Calcola quanti nemici spawnare in questa ondata.
-    
-    FORMULA: 5 nemici base + (3 nemici × numero ondata)
-    
-    Tabella completa:
-    ┌─────────┬──────────────┬────────────┐
-    │ Ondata  │ Formula      │ Totale     │
-    ├─────────┼──────────────┼────────────┤
-    │ 1       │ 5 + (1 × 3)  │  8 nemici  │
-    │ 2       │ 5 + (2 × 3)  │ 11 nemici  │
-    │ 3       │ 5 + (3 × 3)  │ 14 nemici  │
-    │ 4       │ 5 + (4 × 3)  │ 17 nemici  │
-    │ 5       │ 5 + (5 × 3)  │ 20 nemici  │
-    │ 6       │ 5 + (6 × 3)  │ 23 nemici  │
-    │ 7       │ 5 + (7 × 3)  │ 26 nemici  │
-    │ 8       │ 5 + (8 × 3)  │ 29 nemici  │
-    │ 9       │ 5 + (9 × 3)  │ 32 nemici  │
-    │ 10      │ 5 + (10 × 3) │ 35 nemici  │
-    └─────────┴──────────────┴────────────┘
-    
-    Perché questa formula?
-    - All'inizio (ondata 1) ci sono pochi nemici per insegnare al giocatore
-    - Cresce gradualmente ma non esponenzialmente
-    - Ondata 10 ha abbastanza nemici da essere sfidante ma non impossibile
-    
-    Come modificare la difficoltà:
-    - Più facile: cambia 5 + (ondata × 2)  [meno nemici]
-    - Più difficile: cambia 8 + (ondata × 4)  [più nemici]
-    
-    Parametri:
-        ondata: numero dell'ondata (1-10)
-    
-    Ritorna:
-        numero intero di nemici da spawnare
-    """
+
     return 5 + (ondata * 3)
 
 
@@ -418,51 +264,7 @@ def calcola_numero_nemici(ondata):
 # =============================================================================
 
 def crea_nemico(salute, velocita, ricompensa, tipo='goblin'):
-    """
-    Crea un nuovo nemico come dizionario con tutte le sue proprietà.
-    
-    COS'È UN NEMICO?
-    Un nemico è un dizionario (come una scheda con informazioni) che contiene:
-    - Quanta vita ha
-    - Quanto veloce si muove
-    - Quanti soldi dà quando viene ucciso
-    - Dove si trova nel percorso
-    - La sua posizione precisa sullo schermo
-    - Che tipo di nemico è (goblin/orco/demone)
-    
-    CICLO DI VITA DI UN NEMICO:
-    1. Viene creato con questa funzione
-    2. Viene posizionato all'inizio del percorso da spawna_nemico()
-    3. Si muove lungo il percorso ogni frame con muovi_nemico()
-    4. Le torri gli sparano con danneggia_nemico()
-    5. Quando la salute arriva a 0, viene rimosso e dà soldi al giocatore
-    6. OPPURE raggiunge la fine e il giocatore perde una vita
-    
-    Parametri:
-        salute: punti vita totali del nemico
-                Esempio: un goblin dell'ondata 1 ha 70 HP
-        velocita: quanti pixel si muove per frame
-                  A 60 FPS, 1.5 pixel/frame = 90 pixel/secondo
-        ricompensa: quanti soldi dà quando viene ucciso
-                    Esempio: $25 per un goblin
-        tipo: stringa che identifica il tipo ('goblin', 'orco', 'demone')
-              Usato per sapere che colore disegnarlo
-    
-    Ritorna:
-        dizionario con tutte le proprietà del nemico
-        
-    Esempio di nemico creato:
-        {
-            'salute_max': 70,      # Salute massima (per barra vita)
-            'salute': 70,          # Salute attuale (diminuisce quando colpito)
-            'velocita': 1.1,       # Pixel per frame
-            'ricompensa': 25,      # Soldi che dà
-            'indice_percorso': 0,  # A che punto del percorso si trova (0 = inizio)
-            'x': 0,                # Posizione X in pixel (impostata dopo)
-            'y': 0,                # Posizione Y in pixel (impostata dopo)
-            'tipo': 'goblin'       # Tipo di nemico
-        }
-    """
+
     return {
         'salute_max': salute,      # Salute massima - serve per disegnare la barra vita
         'salute': salute,          # Salute attuale - diminuisce quando viene colpito
@@ -915,7 +717,7 @@ def aggiorna_gioco(stato):
 # =============================================================================
 # RENDERING
 # =============================================================================
-# ASMAA --------------------------------------------------
+
 def disegna_sfondo(schermo):
     """Disegna sfondo e griglia"""
     schermo.blit(sfondo_img, (0, 0))
@@ -931,9 +733,7 @@ def disegna_percorso(schermo):
     for gx, gy in PERCORSO_GRIGLIA:
         rettangolo = pygame.Rect(gx * DIMENSIONE_CELLA, gy * DIMENSIONE_CELLA,
                                 DIMENSIONE_CELLA, DIMENSIONE_CELLA)
-
-#--------------------------------------------------------------------------
-
+        
 def disegna_preview_torre(schermo, griglia_x, griglia_y, valida):
     """Disegna preview semi-trasparente della torre"""
     colore = VERDE_CHIARO if valida else ROSSO
@@ -947,7 +747,7 @@ def disegna_preview_torre(schermo, griglia_x, griglia_y, valida):
 
 def disegna_pannello_ui(schermo, soldi, vite, ondata):
     """Disegna il pannello laterale"""
-    pygame.draw.rect(schermo, GRIGIO, (800, 0, 200, ALTEZZA_SCHERMO))
+    pygame.draw.rect(schermo, GRIGIO, (1150, 0, 200, ALTEZZA_SCHERMO))
     
     font_grande = pygame.font.Font(None, 32)
     
@@ -955,9 +755,10 @@ def disegna_pannello_ui(schermo, soldi, vite, ondata):
     testo_vite = font_grande.render(f"Vite: {vite}", True, ROSSO)
     testo_ondata = font_grande.render(f"Ondata: {ondata}/10", True, BIANCO)
     
-    schermo.blit(testo_soldi, (810, 10))
-    schermo.blit(testo_vite, (810, 40))
-    schermo.blit(testo_ondata, (810, 70))
+
+    schermo.blit(testo_soldi, (1170, 10))
+    schermo.blit(testo_vite, (1170, 40))
+    schermo.blit(testo_ondata, (1170, 70))
 
 
 def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato):
@@ -970,6 +771,7 @@ def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato
         colore = GRIGIO
     
     rettangolo = pygame.Rect(820, pos_y, 150, 60)
+    rettangolo = pygame.Rect(1170, pos_y, 150, 60)
     pygame.draw.rect(schermo, colore, rettangolo)
     pygame.draw.rect(schermo, NERO, rettangolo, 2)
     
@@ -990,6 +792,7 @@ def disegna_pulsante_ondata(schermo, ondata_in_corso):
         return None
     
     rettangolo = pygame.Rect(820, 350, 150, 60)
+    rettangolo = pygame.Rect(1170, 350, 150, 60)
     pygame.draw.rect(schermo, BLU, rettangolo)
     pygame.draw.rect(schermo, NERO, rettangolo, 2)
     
@@ -1157,5 +960,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
