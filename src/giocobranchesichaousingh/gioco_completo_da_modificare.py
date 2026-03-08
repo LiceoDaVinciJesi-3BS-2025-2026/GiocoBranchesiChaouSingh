@@ -157,114 +157,25 @@ COSTI_TORRI = {
                       # Ideale per: ondate massive con tanti nemici deboli
     
     'cannone': 200    # Torre potente
-                      # - Raggio lungo (200 pixel)
-                      # - Danno alto (40 HP)
-                      # - Velocità lenta (spara ogni 120 frame = 2 secondi)
-                      # Ideale per: nemici forti nelle ondate avanzate
 }
-
-# -------------------------
-# FRAME PER SECONDO
-# -------------------------
 FPS = 60  # Il gioco gira a 60 frame per secondo
-          # Questo significa che tutte le funzioni di aggiornamento
-          # (movimento nemici, cooldown torri, spawn, ecc.) vengono
-          # chiamate 60 volte al secondo.
-          # È lo standard per giochi fluidi.
-
-
-# =============================================================================
-# FUNZIONI DI CONVERSIONE
-# =============================================================================
-# Queste funzioni convertono tra due sistemi di coordinate:
-# - GRIGLIA: coordinate intere (0-15 per x, 0-11 per y)
-# - PIXEL: coordinate precise in pixel sullo schermo
 
 def griglia_a_pixel(griglia_x, griglia_y):
-    """
-    Converte coordinate GRIGLIA in coordinate PIXEL (centro della cella).
-    
-    Perché serve?
-    - La griglia usa numeri interi semplici come (5, 3)
-    - Ma per disegnare sullo schermo servono coordinate pixel precise
-    - Questa funzione fa la conversione
-    
-    Come funziona?
-    - Moltiplica per DIMENSIONE_CELLA (50) per trovare l'angolo della cella
-    - Aggiunge metà dimensione (25) per centrare nel mezzo della cella
-    
-    Esempio:
-        griglia (5, 3) diventa:
-        x = 5 * 50 + 25 = 275 pixel
-        y = 3 * 50 + 25 = 175 pixel
-    
-    Parametri:
-        griglia_x: coordinata x nella griglia (0-15)
-        griglia_y: coordinata y nella griglia (0-11)
-    
-    Ritorna:
-        tupla (pixel_x, pixel_y) con le coordinate in pixel
-    """
+
     pixel_x = griglia_x * DIMENSIONE_CELLA + DIMENSIONE_CELLA // 2
     pixel_y = griglia_y * DIMENSIONE_CELLA + DIMENSIONE_CELLA // 2
     return (pixel_x, pixel_y)
 
 
 def pixel_a_griglia(pixel_x, pixel_y):
-    """
-    Converte coordinate PIXEL in coordinate GRIGLIA.
-    
-    Perché serve?
-    - Quando il giocatore clicca col mouse, otteniamo coordinate pixel
-    - Ma dobbiamo sapere in quale cella della griglia ha cliccato
-    - Questa funzione fa la conversione inversa
-    
-    Come funziona?
-    - Divide per DIMENSIONE_CELLA (50)
-    - L'operatore // fa una divisione intera (scarta la parte decimale)
-    
-    Esempio:
-        pixel (275, 175) diventa:
-        x = 275 // 50 = 5
-        y = 175 // 50 = 3
-        
-    Nota: Anche se clicchi a (276, 178) o (249, 151), 
-          finirai sempre nella stessa cella!
-    
-    Parametri:
-        pixel_x: coordinata x in pixel
-        pixel_y: coordinata y in pixel
-    
-    Ritorna:
-        tupla (griglia_x, griglia_y) con le coordinate nella griglia
-    """
+
     griglia_x = pixel_x // DIMENSIONE_CELLA
     griglia_y = pixel_y // DIMENSIONE_CELLA
     return (griglia_x, griglia_y)
 
 
 def ottieni_percorso_pixel():
-    """
-    Converte tutto il percorso da coordinate griglia a coordinate pixel.
-    
-    Perché serve?
-    - Il percorso è definito in coordinate griglia (più facile da editare)
-    - Ma i nemici si muovono in pixel (movimento fluido)
-    - Questa funzione converte tutto il percorso una volta sola
-    
-    Come funziona?
-    - Prende ogni punto del PERCORSO_GRIGLIA
-    - Lo converte in pixel usando griglia_a_pixel()
-    - Crea una nuova lista con tutti i punti convertiti
-    
-    Esempio:
-        PERCORSO_GRIGLIA = [(0, 5), (1, 5), (2, 5), ...]
-        diventa
-        [(25, 275), (75, 275), (125, 275), ...]
-    
-    Ritorna:
-        lista di tuple (x, y) in coordinate pixel
-    """
+
     return [griglia_a_pixel(x, y) for x, y in PERCORSO_GRIGLIA]
 
 
@@ -275,58 +186,7 @@ def ottieni_percorso_pixel():
 # Ogni ondata è più difficile della precedente.
 
 def calcola_statistiche_nemici(ondata):
-    """
-    Calcola le statistiche dei nemici in base al numero dell'ondata.
     
-    IL GIOCO HA 3 FASI DI DIFFICOLTÀ:
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 1 - TUTORIAL (Ondate 1-3)                            │
-    │ Nemici: GOBLIN                                              │
-    │ - Vita base: 50 HP                                          │
-    │ - Incremento: +20 HP per ondata                             │
-    │ - Velocità: lenta (1.0 pixel/frame base)                    │
-    │ - Ricompensa: $20 base                                      │
-    │ Risultato: Ondata 1 = 70 HP, Ondata 3 = 110 HP             │
-    └─────────────────────────────────────────────────────────────┘
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 2 - DIFFICOLTÀ MEDIA (Ondate 4-7)                    │
-    │ Nemici: ORCHI                                               │
-    │ - Vita base: 80 HP                                          │
-    │ - Incremento: +25 HP per ondata                             │
-    │ - Velocità: media (1.2 pixel/frame base)                    │
-    │ - Ricompensa: $30 base                                      │
-    │ Risultato: Ondata 4 = 180 HP, Ondata 7 = 255 HP            │
-    └─────────────────────────────────────────────────────────────┘
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │ FASE 3 - DIFFICOLTÀ ALTA (Ondate 8-10)                    │
-    │ Nemici: DEMONI                                              │
-    │ - Vita base: 120 HP                                         │
-    │ - Incremento: +30 HP per ondata                             │
-    │ - Velocità: veloce (1.4 pixel/frame base)                   │
-    │ - Ricompensa: $40 base                                      │
-    │ Risultato: Ondata 8 = 360 HP, Ondata 10 = 420 HP           │
-    └─────────────────────────────────────────────────────────────┘
-    
-    NOTA SULLA VELOCITÀ:
-    - Ogni ondata aumenta la velocità di +0.1 pixel/frame
-    - Ma c'è un limite massimo di 3.0 pixel/frame
-    - Altrimenti i nemici diventerebbero impossibili da colpire!
-    
-    NOTA SULLA RICOMPENSA:
-    - Ogni ondata aumenta la ricompensa di +$5
-    - Questo permette al giocatore di comprare torri migliori
-    - È un sistema di progressione bilanciato
-    
-    Parametri:
-        ondata: numero dell'ondata corrente (1-10)
-    
-    Ritorna:
-        tupla con (tipo, salute, velocità, ricompensa)
-        Esempio: ('goblin', 70, 1.1, 25)
-    """
     # FASE 1: Goblin (ondate 1-3)
     if ondata <= 3:
         tipo = 'goblin'
@@ -361,42 +221,7 @@ def calcola_statistiche_nemici(ondata):
 
 
 def calcola_numero_nemici(ondata):
-    """
-    Calcola quanti nemici spawnare in questa ondata.
-    
-    FORMULA: 5 nemici base + (3 nemici × numero ondata)
-    
-    Tabella completa:
-    ┌─────────┬──────────────┬────────────┐
-    │ Ondata  │ Formula      │ Totale     │
-    ├─────────┼──────────────┼────────────┤
-    │ 1       │ 5 + (1 × 3)  │  8 nemici  │
-    │ 2       │ 5 + (2 × 3)  │ 11 nemici  │
-    │ 3       │ 5 + (3 × 3)  │ 14 nemici  │
-    │ 4       │ 5 + (4 × 3)  │ 17 nemici  │
-    │ 5       │ 5 + (5 × 3)  │ 20 nemici  │
-    │ 6       │ 5 + (6 × 3)  │ 23 nemici  │
-    │ 7       │ 5 + (7 × 3)  │ 26 nemici  │
-    │ 8       │ 5 + (8 × 3)  │ 29 nemici  │
-    │ 9       │ 5 + (9 × 3)  │ 32 nemici  │
-    │ 10      │ 5 + (10 × 3) │ 35 nemici  │
-    └─────────┴──────────────┴────────────┘
-    
-    Perché questa formula?
-    - All'inizio (ondata 1) ci sono pochi nemici per insegnare al giocatore
-    - Cresce gradualmente ma non esponenzialmente
-    - Ondata 10 ha abbastanza nemici da essere sfidante ma non impossibile
-    
-    Come modificare la difficoltà:
-    - Più facile: cambia 5 + (ondata × 2)  [meno nemici]
-    - Più difficile: cambia 8 + (ondata × 4)  [più nemici]
-    
-    Parametri:
-        ondata: numero dell'ondata (1-10)
-    
-    Ritorna:
-        numero intero di nemici da spawnare
-    """
+
     return 5 + (ondata * 3)
 
 
@@ -405,51 +230,7 @@ def calcola_numero_nemici(ondata):
 # =============================================================================
 
 def crea_nemico(salute, velocita, ricompensa, tipo='goblin'):
-    """
-    Crea un nuovo nemico come dizionario con tutte le sue proprietà.
-    
-    COS'È UN NEMICO?
-    Un nemico è un dizionario (come una scheda con informazioni) che contiene:
-    - Quanta vita ha
-    - Quanto veloce si muove
-    - Quanti soldi dà quando viene ucciso
-    - Dove si trova nel percorso
-    - La sua posizione precisa sullo schermo
-    - Che tipo di nemico è (goblin/orco/demone)
-    
-    CICLO DI VITA DI UN NEMICO:
-    1. Viene creato con questa funzione
-    2. Viene posizionato all'inizio del percorso da spawna_nemico()
-    3. Si muove lungo il percorso ogni frame con muovi_nemico()
-    4. Le torri gli sparano con danneggia_nemico()
-    5. Quando la salute arriva a 0, viene rimosso e dà soldi al giocatore
-    6. OPPURE raggiunge la fine e il giocatore perde una vita
-    
-    Parametri:
-        salute: punti vita totali del nemico
-                Esempio: un goblin dell'ondata 1 ha 70 HP
-        velocita: quanti pixel si muove per frame
-                  A 60 FPS, 1.5 pixel/frame = 90 pixel/secondo
-        ricompensa: quanti soldi dà quando viene ucciso
-                    Esempio: $25 per un goblin
-        tipo: stringa che identifica il tipo ('goblin', 'orco', 'demone')
-              Usato per sapere che colore disegnarlo
-    
-    Ritorna:
-        dizionario con tutte le proprietà del nemico
-        
-    Esempio di nemico creato:
-        {
-            'salute_max': 70,      # Salute massima (per barra vita)
-            'salute': 70,          # Salute attuale (diminuisce quando colpito)
-            'velocita': 1.1,       # Pixel per frame
-            'ricompensa': 25,      # Soldi che dà
-            'indice_percorso': 0,  # A che punto del percorso si trova (0 = inizio)
-            'x': 0,                # Posizione X in pixel (impostata dopo)
-            'y': 0,                # Posizione Y in pixel (impostata dopo)
-            'tipo': 'goblin'       # Tipo di nemico
-        }
-    """
+
     return {
         'salute_max': salute,      # Salute massima - serve per disegnare la barra vita
         'salute': salute,          # Salute attuale - diminuisce quando viene colpito
@@ -463,49 +244,7 @@ def crea_nemico(salute, velocita, ricompensa, tipo='goblin'):
 
 
 def muovi_nemico(nemico, percorso_pixel):
-    """
-    Muove un nemico lungo il percorso in modo fluido.
-    
-    COME FUNZIONA IL MOVIMENTO:
-    Il nemico non "salta" da un punto all'altro del percorso.
-    Si muove gradualmente pixel per pixel verso il punto successivo.
-    
-    PROCESSO PASSO-PASSO:
-    1. Controlla se c'è ancora un punto successivo nel percorso
-    2. Calcola la direzione verso quel punto (dx, dy)
-    3. Calcola la distanza dal punto successivo
-    4. Se è abbastanza vicino (< velocità):
-       - Passa al punto successivo nel percorso
-       - Incrementa indice_percorso
-    5. Altrimenti:
-       - Si muove di "velocità" pixel verso quel punto
-       - Usa la direzione normalizzata per movimento fluido
-    
-    ESEMPIO NUMERICO:
-    Nemico in (25, 275), punto successivo in (75, 275), velocità = 1.5
-    
-    Frame 1: dx = 50, dy = 0, distanza = 50
-             muove a (26.5, 275)  [+1.5 pixel in X]
-    Frame 2: muove a (28, 275)
-    Frame 3: muove a (29.5, 275)
-    ...
-    Frame 34: distanza < 1.5, passa al punto successivo!
-    
-    DIREZIONE NORMALIZZATA:
-    Per muoversi sempre alla stessa velocità in tutte le direzioni:
-    - Calcola dx/distanza e dy/distanza (vettore direzione)
-    - Moltiplica per velocità
-    - Risultato: movimento costante diagonale, orizzontale o verticale
-    
-    Parametri:
-        nemico: dizionario del nemico da muovere
-        percorso_pixel: lista completa del percorso in coordinate pixel
-                       Esempio: [(25, 275), (75, 275), (125, 275), ...]
-    
-    Ritorna:
-        True se il nemico ha raggiunto la FINE del percorso (perde vita)
-        False se il nemico è ancora sul percorso
-    """
+
     # Controlla se c'è ancora un punto successivo
     if nemico['indice_percorso'] < len(percorso_pixel) - 1:
         

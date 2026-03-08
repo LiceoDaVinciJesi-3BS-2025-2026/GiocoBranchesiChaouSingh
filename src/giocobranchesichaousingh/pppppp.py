@@ -718,21 +718,13 @@ def aggiorna_gioco(stato):
 # RENDERING
 # =============================================================================
 
-def disegna_sfondo(schermo):
-    """Disegna sfondo e griglia"""
-    schermo.blit(sfondo_img, (0, 0))
-    
-    for x in range(CELLE_LARGHE):
-        for y in range(CELLE_ALTE):
-            rettangolo = pygame.Rect(x * DIMENSIONE_CELLA, y * DIMENSIONE_CELLA,
-                                    DIMENSIONE_CELLA, DIMENSIONE_CELLA)
-
-
 def disegna_percorso(schermo):
     """Disegna il sentiero"""
     for gx, gy in PERCORSO_GRIGLIA:
         rettangolo = pygame.Rect(gx * DIMENSIONE_CELLA, gy * DIMENSIONE_CELLA,
                                 DIMENSIONE_CELLA, DIMENSIONE_CELLA)
+        pygame.draw.rect(schermo, MARRONE_SENTIERO, rettangolo)
+
         
 def disegna_preview_torre(schermo, griglia_x, griglia_y, valida):
     """Disegna preview semi-trasparente della torre"""
