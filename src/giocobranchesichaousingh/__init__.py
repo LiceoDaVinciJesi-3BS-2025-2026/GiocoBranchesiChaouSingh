@@ -38,7 +38,7 @@ PERCORSO_GRIGLIA = [
     # Tratto iniziale a sinistra (altezza media)
     (0, 19), (1, 19), (2, 19),(3,19), 
     # Primo scalino verso l'alto (Y diminuisce)
-    (3, 18), (3, 17), (3, 16), (3, 15),(3, 14)
+    (3, 18), (3, 17), (3, 16), (3, 15),(3, 14),
     # Grande salita verso il picco
     (4, 14), (5, 14), (6, 14),
     # Primo plateau (il punto più alto)
@@ -48,11 +48,19 @@ PERCORSO_GRIGLIA = [
     (13, 8) ,(14, 8),(15, 8),(16, 8),(17, 8),(18, 8),(19, 8),(20, 8),
     # Discesa leggera e secondo plateau
     (20, 9),(20, 10), (20, 11), (20, 12), (20, 13),(20, 14), (20, 15), (20, 16), (20, 17),
-    (21, 17), (22, 17), (23, 17), (24, 17), (25 17), (26, 17), (27, 17), (28, 17), (29, 17),(30, 17), (31, 17),
+    (21, 17), (22, 17), (23, 17), (24, 17), (25, 17), (26, 17), (27, 17), (28, 17), (29, 17),(30, 17), (31, 17),
     (31, 16), (31, 15), (31, 14), (31, 13), (31, 12), (31, 11),
     (32, 11), (33, 11), (34, 11),(35, 11),(36, 11),(37, 11)
 ]
 
+pygame.init()
+schermo = pygame.display.set_mode((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
+pygame.display.set_caption("Tower Defense")
+clock = pygame.time.Clock()
+
+# Carica l'immagine di sfondo
+sfondo_img = pygame.image.load("sfondo.png").convert()
+sfondo_img = pygame.transform.scale(sfondo_img, (LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
 
 SOLDI_INIZIALI    = 300
 VITE_INIZIALI     = 15
@@ -418,8 +426,10 @@ def aggiorna_gioco(stato):
 # RENDERING GIOCO - FUNZIONI MODIFICATE DAL SECONDO CODICE
 # =============================================================================
 
+
 def disegna_sfondo(schermo):
     """Disegna sfondo e griglia DAL SECONDO CODICE"""
+    #schermo.blit(sfondo_img, (0, 0))
     schermo.fill(VERDE_ERBA)
     
     for x in range(CELLE_LARGHE):
@@ -459,7 +469,6 @@ def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato
     return rettangolo
 
 def disegna_pannello(schermo, stato, immagini, font_grande, font_medio, font_piccolo):
-    """Disegna il pannello laterale"""
     X = LARGHEZZA_GIOCO
     pygame.draw.rect(schermo, (50,50,60), (X, 0, LARGHEZZA_PANNELLO, ALTEZZA_SCHERMO))
     pygame.draw.rect(schermo, (70,70,85), (X+2, 2, LARGHEZZA_PANNELLO-4, ALTEZZA_SCHERMO-4))
@@ -478,22 +487,34 @@ def disegna_pannello(schermo, stato, immagini, font_grande, font_medio, font_pic
     schermo.blit(font_piccolo.render("nemici+ondate+vite", True, (160,160,160)),    (X+10, 158))
 
 def disegna_pulsanti_torri(schermo, stato, immagini, font):
-    """Disegna tutti i pulsanti delle torri usando la nuova funzione"""
     pulsanti = {}
+    X = LARGHEZZA_GIOCO
     posizioni = [('arciere', 185), ('magia', 258), ('cannone', 331)]
-    
+    nomi = {'arciere': 'Arciere', 'magia': 'Magia', 'cannone': 'Cannone'}
     for tipo, pos_y in posizioni:
         costo = COSTI_TORRI[tipo]
-        selezionato = stato['torre_selezionata'] == tipo
-        pulsanti[tipo] = disegna_pulsante_torre(schermo, tipo, costo, pos_y, stato['soldi'], selezionato)
-    
+        sel = stato['torre_selezionata'] == tipo
+        if sel:
+            cs, cb = (200,170,0), GIALLO
+        elif stato['soldi'] >= costo:
+            cs, cb = (40,80,40), VERDE_CHIARO
+        else:
+            cs, cb = (60,60,60), GRIGIO
+        r = pygame.Rect(X+10, pos_y, 200, 64)
+        pygame.draw.rect(schermo, cs, r, border_radius=6)
+        pygame.draw.rect(schermo, cb, r, 2, border_radius=6)
+        img = immagini.get(f'torre_{tipo}')
+        if img: schermo.blit(pygame.transform.scale(img, (40,40)), (r.x+6, r.y+12))
+        ct = BIANCO if stato['soldi'] >= costo else (130,130,130)
+        schermo.blit(font.render(nomi[tipo], True, ct), (r.x+52, r.y+12))
+        schermo.blit(font.render(f"${costo}", True, GIALLO if stato['soldi'] >= costo else (130,130,130)),
+                     (r.x+52, r.y+38))
+        pulsanti[tipo] = r
     return pulsanti
 
 def disegna_pulsante_ondata(schermo, ondata_in_corso, font):
-    """Disegna pulsante per avviare ondata"""
     if ondata_in_corso:
         return None
-    
     X = LARGHEZZA_GIOCO
     r = pygame.Rect(X+10, 415, 200, 54)
     pygame.draw.rect(schermo, (20,80,160), r, border_radius=8)
