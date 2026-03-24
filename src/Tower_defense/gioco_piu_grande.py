@@ -10,10 +10,6 @@ import pygame
 import math
 import os
 
-# =============================================================================
-# CONFIGURAZIONE GENERALE
-# =============================================================================
-
 LARGHEZZA_SCHERMO = 1220
 ALTEZZA_SCHERMO = 700
 
