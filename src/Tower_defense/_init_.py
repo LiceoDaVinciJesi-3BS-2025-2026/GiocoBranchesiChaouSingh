@@ -145,7 +145,7 @@ PERCORSO = [
 ]
 
 # Parametri generali della partita
-SOLDI_INIZIO  = 300   # soldi con cui si inizia
+SOLDI_INIZIO  = 400   # soldi con cui si inizia
 VITE_INIZIO   = 15    # vite con cui si inizia
 ONDATE_TOTALI = 10    # numero di ondate da superare per vincere
 BONUS_ONDATA  = 50    # soldi extra dati al giocatore dopo ogni ondata
@@ -154,9 +154,9 @@ FPS           = 60    # frame al secondo
 
 # Costo in soldi per comprare ogni tipo di torre
 COSTO_TORRE = {
-    "arciere": 100,
-    "magia":   150,
-    "cannone": 200,
+    "arciere": 150,
+    "magia":   250,
+    "cannone": 300,
 }
 
 # Statistiche delle torri: (raggio di attacco, danno, frame tra spari, colore)
@@ -194,7 +194,7 @@ def carica_immagini():
     # Sprite delle torri e dei proiettili
     for tipo in ("arciere", "cannone", "magia"):
         im[f"torre_{tipo}"] = carica_singola(cartella, f"torre_{tipo}.png", (68, 68))
-        im[f"colpo_{tipo}"] = carica_singola(cartella, f"colpo_{tipo}.png", (22, 22))
+        im[f"colpo_{tipo}"] = carica_singola(cartella, f"colpo_{tipo}.png", (35, 35))
 
     return im
 
@@ -944,4 +944,9 @@ def disegna_game_over(schermo, stato, classifica, font_grande, font_medio, font_
 
 # AVVIO DEL GIOCO
 
-main()
+if __name__ == "__main__":
+
+    import doctest
+
+    doctest.testmod()
+    main()

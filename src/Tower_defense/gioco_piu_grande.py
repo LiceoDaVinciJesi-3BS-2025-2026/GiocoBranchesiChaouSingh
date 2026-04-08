@@ -1,27 +1,22 @@
 """
 =============================================================================
-TOWER DEFENSE - GIOCO COMPLETO CON GRAFICA
+TOWER DEFENSE - GIOCO COMPLETO
 =============================================================================
+
+Tutto in un unico file - meccanica di gioco e sistema dei livelli.
 """
 
 import pygame
 import math
 import os
 
-# =============================================================================
-# CONFIGURAZIONE GENERALE
-# =============================================================================
-
-LARGHEZZA_SCHERMO = 1000
+LARGHEZZA_SCHERMO = 1220
 ALTEZZA_SCHERMO = 700
 
-DIMENSIONE_CELLA = 50
-CELLE_LARGHE = 16
-CELLE_ALTE = 12
+DIMENSIONE_CELLA = 42
+CELLE_LARGHE = 26
+CELLE_ALTE = 16
 
-VERDE_ERBA = (34, 139, 34)
-VERDE_SCURO = (0, 100, 0)
-MARRONE_SENTIERO = (139, 90, 43)
 GRIGIO = (128, 128, 128)
 NERO = (0, 0, 0)
 BIANCO = (255, 255, 255)
@@ -32,12 +27,27 @@ ROSSO = (220, 20, 60)
 GIALLO = (255, 215, 0)
 VERDE_CHIARO = (0, 255, 0)
 
+pygame.init()
+schermo = pygame.display.set_mode((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
+pygame.display.set_caption("Tower Defense")
+clock = pygame.time.Clock()
+
+global sfondo_img
+sfondo_img = pygame.image.load("srondo.png").convert()
+sfondo_img = pygame.transform.scale(sfondo_img, (1000, ALTEZZA_SCHERMO))
+
 PERCORSO_GRIGLIA = [
-    (0, 5), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
-    (6, 4), (6, 3), (6, 2), (6, 1),
-    (7, 1), (8, 1), (9, 1), (10, 1),
-    (10, 2), (10, 3), (10, 4), (10, 5), (10, 6), (10, 7),
-    (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7)
+    (0, 3), (1, 3), (2, 3),
+    (2, 4), (2, 5), (2, 6), (2, 7),
+    (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7),
+    (8, 8), (8, 9), (8, 10), (8, 11), (8, 12),
+    (9, 12), (10, 12), (11, 12), (12, 12), (13, 12), (14, 12),
+    (14, 11), (14, 10), (14, 9), (14, 8), (14, 7),
+    (13, 7), (12, 7),
+    (12, 6), (12, 5), (12, 4), (12, 3), (12, 2),
+    (13, 2), (14, 2), (15, 2), (16, 2), (17, 2), (18, 2),
+    (18, 3), (18, 4), (18, 5), (18, 6), (18, 7),
+    (19, 7), (20, 7), (21, 7), (22, 7), (23, 7),
 ]
 
 SOLDI_INIZIALI = 300
@@ -56,25 +66,21 @@ FPS = 60
 
 
 # =============================================================================
-# CARICAMENTO IMMAGINI
+# CARICAMENTO IMMAGINI SPRITE (da codiceconimmagini)
 # =============================================================================
 
 def carica_immagini():
     """
-    Carica tutte le immagini dalla cartella del gioco.
-    Le immagini vengono scalate alla dimensione giusta.
-    Se un'immagine non si trova, usa un fallback colorato.
+    Carica tutti gli sprite dalla cartella del gioco.
+    Se un file non esiste, restituisce None e il codice userà
+    il disegno geometrico originale come fallback.
     """
-    # Cartella dove si trovano le immagini (stessa cartella del .py)
     cartella = os.path.dirname(os.path.abspath(__file__))
 
-    immagini = {}
-
-    # Dimensioni standard
-    DIM_NEMICO = (40, 40)
-    DIM_TORRE = (44, 44)
-    DIM_PROIETTILE = (16, 16)
-    DIM_MONETA = (20, 20)
+    DIM_NEMICO     = (60, 60)
+    DIM_TORRE      = (68, 68)
+    DIM_PROIETTILE = (22, 22)
+    DIM_MONETA     = (24, 24)
 
     def carica(nome_file, dimensione):
         percorso = os.path.join(cartella, nome_file)
@@ -82,58 +88,42 @@ def carica_immagini():
             img = pygame.image.load(percorso).convert_alpha()
             return pygame.transform.scale(img, dimensione)
         except Exception:
-            # Fallback: superficie colorata
-            surf = pygame.Surface(dimensione, pygame.SRCALPHA)
-            surf.fill((255, 0, 255, 180))  # Magenta = immagine mancante
-            return surf
+            return None  # fallback geometrico
 
-    # Nemici
-    immagini['goblin_destra']  = carica('goblin_versodestra.png', DIM_NEMICO)
-    immagini['goblin_alto']    = carica('goblin_versoalto.png',   DIM_NEMICO)
-    immagini['goblin_basso']   = pygame.transform.flip(carica('goblin_versoalto.png', DIM_NEMICO), False, True)
+    immagini = {}
 
-    immagini['orco_destra']    = carica('orco_versodestra.png',   DIM_NEMICO)
-    immagini['orco_alto']      = carica('orco_versoalto.png',     DIM_NEMICO)
-    immagini['orco_basso']     = pygame.transform.flip(carica('orco_versoalto.png', DIM_NEMICO), False, True)
-
-    immagini['demone_destra']  = carica('demone_versodestra.png', DIM_NEMICO)
-    immagini['demone_alto']    = carica('demone_versoalto.png',   DIM_NEMICO)
-    immagini['demone_basso']   = pygame.transform.flip(carica('demone_versoalto.png', DIM_NEMICO), False, True)
-
-    # Versioni specchiate (verso sinistra)
-    immagini['goblin_sinistra']  = pygame.transform.flip(immagini['goblin_destra'],  True, False)
-    immagini['orco_sinistra']    = pygame.transform.flip(immagini['orco_destra'],    True, False)
-    immagini['demone_sinistra']  = pygame.transform.flip(immagini['demone_destra'],  True, False)
+    # Nemici per direzione
+    for tipo in ('goblin', 'orco', 'demone'):
+        immagini[f'{tipo}_destra'] = carica(f'{tipo}_versodestra.png', DIM_NEMICO)
+        immagini[f'{tipo}_alto']   = carica(f'{tipo}_versoalto.png',   DIM_NEMICO)
+        src_alto   = immagini[f'{tipo}_alto']
+        src_destra = immagini[f'{tipo}_destra']
+        immagini[f'{tipo}_basso']    = (pygame.transform.flip(src_alto,   False, True)
+                                         if src_alto   else None)
+        immagini[f'{tipo}_sinistra'] = (pygame.transform.flip(src_destra, True,  False)
+                                         if src_destra else None)
 
     # Torri
-    immagini['torre_arciere']  = carica('torre_arciere.png',  DIM_TORRE)
-    immagini['torre_cannone']  = carica('torre_cannone.png',  DIM_TORRE)
-    immagini['torre_magia']    = carica('torre_magia.png',    DIM_TORRE)
+    for tipo in ('arciere', 'cannone', 'magia'):
+        immagini[f'torre_{tipo}'] = carica(f'torre_{tipo}.png', DIM_TORRE)
 
     # Proiettili
-    immagini['colpo_arciere']  = carica('colpo_arciere.png',  DIM_PROIETTILE)
-    immagini['colpo_cannone']  = carica('colpo_cannone.png',  DIM_PROIETTILE)
-    immagini['colpo_magia']    = carica('colpo_magia.png',    DIM_PROIETTILE)
+    for tipo in ('arciere', 'cannone', 'magia'):
+        immagini[f'colpo_{tipo}'] = carica(f'colpo_{tipo}.png', DIM_PROIETTILE)
 
-    # Moneta
-    immagini['moneta']         = carica('moneta.png', DIM_MONETA)
+    # Moneta (animazione)
+    immagini['moneta'] = carica('moneta.png', DIM_MONETA)
 
     return immagini
 
 
 def ottieni_immagine_nemico(immagini, tipo, dx, dy):
-    """
-    Ritorna l'immagine giusta del nemico in base alla direzione di movimento.
-    dx, dy = differenza di posizione rispetto al prossimo punto del percorso.
-    """
-    # Determina direzione prevalente
+    """Restituisce lo sprite giusto in base alla direzione di movimento."""
     if abs(dx) >= abs(dy):
         direzione = 'destra' if dx > 0 else 'sinistra'
     else:
         direzione = 'basso' if dy > 0 else 'alto'
-
-    chiave = f'{tipo}_{direzione}'
-    return immagini.get(chiave, immagini.get(f'{tipo}_destra'))
+    return immagini.get(f'{tipo}_{direzione}')
 
 
 # =============================================================================
@@ -206,8 +196,8 @@ def crea_nemico(salute, velocita, ricompensa, tipo='goblin'):
         'x': 0,
         'y': 0,
         'tipo': tipo,
-        'dx': 1,   # direzione corrente (per scegliere l'immagine)
-        'dy': 0
+        'dx': 1,   # direzione corrente per lo sprite
+        'dy': 0,
     }
 
 
@@ -218,7 +208,6 @@ def muovi_nemico(nemico, percorso_pixel):
         dy = target_y - nemico['y']
         distanza = math.sqrt(dx**2 + dy**2)
 
-        # Salva direzione per l'animazione
         nemico['dx'] = dx
         nemico['dy'] = dy
 
@@ -241,76 +230,70 @@ def danneggia_nemico(nemico, danno):
 
 
 def disegna_nemico(schermo, nemico, immagini):
-    """Disegna un nemico usando l'immagine corretta"""
+    """Sprite se disponibile, altrimenti cerchio colorato originale."""
     x = int(nemico['x'])
     y = int(nemico['y'])
 
     img = ottieni_immagine_nemico(immagini, nemico['tipo'], nemico['dx'], nemico['dy'])
-    w, h = img.get_size()
-    schermo.blit(img, (x - w // 2, y - h // 2))
 
-    # Barra vita
-    larghezza_barra = 34
-    altezza_barra = 5
+    if img:
+        w, h = img.get_size()
+        schermo.blit(img, (x - w // 2, y - h // 2))
+        raggio = h // 2
+    else:
+        # Fallback grafico originale
+        if nemico['tipo'] == 'goblin':
+            colore = (0, 200, 0)
+            raggio = 16
+        elif nemico['tipo'] == 'orco':
+            colore = (200, 50, 50)
+            raggio = 19
+        else:
+            colore = (150, 0, 200)
+            raggio = 22
+        pygame.draw.circle(schermo, colore, (x, y), raggio)
+        pygame.draw.circle(schermo, NERO, (x, y), raggio, 2)
+
+    # Barra vita originale
+    larghezza_barra = 44
+    altezza_barra = 6
     x_barra = x - larghezza_barra // 2
-    y_barra = y - h // 2 - 10
+    y_barra = y - raggio - 10
     percentuale = nemico['salute'] / nemico['salute_max']
 
-    # Sfondo barra (rosso)
-    pygame.draw.rect(schermo, (180, 0, 0), (x_barra, y_barra, larghezza_barra, altezza_barra))
-    # Vita rimanente (verde → giallo → rosso)
-    if percentuale > 0.5:
-        colore_barra = VERDE_CHIARO
-    elif percentuale > 0.25:
-        colore_barra = GIALLO
-    else:
-        colore_barra = ROSSO
-    pygame.draw.rect(schermo, colore_barra,
-                     (x_barra, y_barra, int(larghezza_barra * percentuale), altezza_barra))
-    pygame.draw.rect(schermo, NERO, (x_barra, y_barra, larghezza_barra, altezza_barra), 1)
+    pygame.draw.rect(schermo, GRIGIO, (x_barra, y_barra, larghezza_barra, altezza_barra))
+    pygame.draw.rect(schermo, VERDE_CHIARO,
+                     (x_barra, y_barra, larghezza_barra * percentuale, altezza_barra))
 
 
 # =============================================================================
-# ANIMAZIONI - MONETE CHE VOLANO VIA
+# ANIMAZIONI MONETE (da codiceconimmagini)
 # =============================================================================
 
 def crea_animazione_moneta(x, y, valore):
-    """Crea una piccola animazione di moneta che sale verso l'alto"""
-    return {
-        'x': x,
-        'y': y,
-        'valore': valore,
-        'durata': 60,       # frame totali
-        'timer': 0
-    }
+    return {'x': x, 'y': y, 'valore': valore, 'durata': 60, 'timer': 0}
 
 
 def aggiorna_animazioni(animazioni):
-    """Aggiorna tutte le animazioni attive, rimuove quelle finite"""
     for anim in animazioni[:]:
         anim['timer'] += 1
-        anim['y'] -= 1  # sale verso l'alto
+        anim['y'] -= 1
         if anim['timer'] >= anim['durata']:
             animazioni.remove(anim)
 
 
 def disegna_animazioni(schermo, animazioni, immagini, font):
-    """Disegna le animazioni moneta"""
     for anim in animazioni:
-        # Opacità che diminuisce
         alpha = max(0, 255 - int(255 * anim['timer'] / anim['durata']))
         surf = pygame.Surface((60, 24), pygame.SRCALPHA)
-
-        # Icona moneta
-        img_moneta = immagini['moneta'].copy()
-        img_moneta.set_alpha(alpha)
-        surf.blit(img_moneta, (0, 2))
-
-        # Testo valore
+        img_moneta = immagini.get('moneta')
+        if img_moneta:
+            im = img_moneta.copy()
+            im.set_alpha(alpha)
+            surf.blit(im, (0, 2))
         testo = font.render(f"+${anim['valore']}", True, GIALLO)
         testo.set_alpha(alpha)
         surf.blit(testo, (24, 0))
-
         schermo.blit(surf, (int(anim['x']) - 10, int(anim['y'])))
 
 
@@ -389,28 +372,22 @@ def spara_torre(torre):
 
 
 def disegna_torre(schermo, torre, immagini, mostra_raggio=False):
-    """Disegna una torre usando l'immagine"""
+    """Sprite se disponibile, altrimenti quadrato colorato originale."""
     x = int(torre['x'])
     y = int(torre['y'])
 
     if mostra_raggio:
-        # Cerchio raggio semi-trasparente
-        surf_raggio = pygame.Surface((torre['raggio'] * 2, torre['raggio'] * 2), pygame.SRCALPHA)
-        pygame.draw.circle(surf_raggio, (*torre['colore'], 40),
-                           (torre['raggio'], torre['raggio']), torre['raggio'])
-        pygame.draw.circle(surf_raggio, (*torre['colore'], 120),
-                           (torre['raggio'], torre['raggio']), torre['raggio'], 2)
-        schermo.blit(surf_raggio, (x - torre['raggio'], y - torre['raggio']))
+        pygame.draw.circle(schermo, (*torre['colore'], 50), (x, y), torre['raggio'], 1)
 
-    chiave = f"torre_{torre['tipo']}"
-    img = immagini.get(chiave)
+    img = immagini.get(f"torre_{torre['tipo']}")
     if img:
         w, h = img.get_size()
         schermo.blit(img, (x - w // 2, y - h // 2))
     else:
-        # Fallback quadrato
-        dimensione = 20
-        rettangolo = pygame.Rect(x - dimensione // 2, y - dimensione // 2, dimensione, dimensione)
+        # Fallback originale
+        dimensione = 32
+        rettangolo = pygame.Rect(x - dimensione // 2, y - dimensione // 2,
+                                 dimensione, dimensione)
         pygame.draw.rect(schermo, torre['colore'], rettangolo)
         pygame.draw.rect(schermo, NERO, rettangolo, 2)
 
@@ -427,7 +404,7 @@ def crea_proiettile(x, y, bersaglio, danno, tipo='arciere'):
         'danno': danno,
         'velocita': 8,
         'tipo': tipo,
-        'angolo': 0
+        'angolo': 0,
     }
 
 
@@ -437,13 +414,9 @@ def muovi_proiettile(proiettile):
         dx = bersaglio['x'] - proiettile['x']
         dy = bersaglio['y'] - proiettile['y']
         distanza = math.sqrt(dx**2 + dy**2)
-
         if distanza < proiettile['velocita']:
             return True
-
-        # Calcola angolo per ruotare l'immagine
         proiettile['angolo'] = -math.degrees(math.atan2(dy, dx))
-
         proiettile['x'] += (dx / distanza) * proiettile['velocita']
         proiettile['y'] += (dy / distanza) * proiettile['velocita']
         return False
@@ -451,21 +424,23 @@ def muovi_proiettile(proiettile):
 
 
 def disegna_proiettile(schermo, proiettile, immagini):
-    """Disegna un proiettile ruotato nella direzione di movimento"""
+    """Sprite ruotato se disponibile, altrimenti cerchio colorato originale."""
     x = int(proiettile['x'])
     y = int(proiettile['y'])
 
-    chiave = f"colpo_{proiettile['tipo']}"
-    img = immagini.get(chiave)
-
+    img = immagini.get(f"colpo_{proiettile['tipo']}")
     if img:
         img_ruotata = pygame.transform.rotate(img, proiettile['angolo'])
         w, h = img_ruotata.get_size()
         schermo.blit(img_ruotata, (x - w // 2, y - h // 2))
     else:
-        # Fallback cerchio
-        colori = {'arciere': (139, 90, 43), 'cannone': (80, 80, 80), 'magia': (255, 0, 255)}
-        colore = colori.get(proiettile['tipo'], BIANCO)
+        # Fallback originale
+        if proiettile['tipo'] == 'arciere':
+            colore = (139, 90, 43)
+        elif proiettile['tipo'] == 'cannone':
+            colore = (80, 80, 80)
+        else:
+            colore = (255, 0, 255)
         pygame.draw.circle(schermo, colore, (x, y), 4)
 
 
@@ -484,7 +459,7 @@ def inizializza_gioco():
         'nemici': [],
         'torri': [],
         'proiettili': [],
-        'animazioni': [],       # ← animazioni monete
+        'animazioni': [],
         'torre_selezionata': None,
         'game_over': False,
         'vittoria': False
@@ -542,7 +517,7 @@ def aggiorna_gioco(stato):
             stato['nemici_da_spawnare'] -= 1
             stato['timer_spawn'] = 0
 
-    # Muovi nemici
+    # Nemici
     percorso = ottieni_percorso_pixel()
     for nemico in stato['nemici'][:]:
         ha_raggiunto_fine = muovi_nemico(nemico, percorso)
@@ -570,7 +545,6 @@ def aggiorna_gioco(stato):
                 e_morto = danneggia_nemico(bersaglio, proiettile['danno'])
                 if e_morto:
                     stato['soldi'] += bersaglio['ricompensa']
-                    # Animazione moneta
                     stato['animazioni'].append(
                         crea_animazione_moneta(bersaglio['x'], bersaglio['y'],
                                                bersaglio['ricompensa'])
@@ -579,7 +553,7 @@ def aggiorna_gioco(stato):
                         stato['nemici'].remove(bersaglio)
             stato['proiettili'].remove(proiettile)
 
-    # Aggiorna animazioni
+    # Animazioni
     aggiorna_animazioni(stato['animazioni'])
 
     # Fine ondata
@@ -598,149 +572,103 @@ def aggiorna_gioco(stato):
 
 
 # =============================================================================
-# RENDERING
+# RENDERING – grafica originale di __init__.py
 # =============================================================================
 
 def disegna_sfondo(schermo):
-    schermo.fill(VERDE_ERBA)
+    schermo.blit(sfondo_img, (0, 0))
     for x in range(CELLE_LARGHE):
         for y in range(CELLE_ALTE):
             rettangolo = pygame.Rect(x * DIMENSIONE_CELLA, y * DIMENSIONE_CELLA,
                                      DIMENSIONE_CELLA, DIMENSIONE_CELLA)
-            pygame.draw.rect(schermo, VERDE_SCURO, rettangolo, 1)
 
 
 def disegna_percorso(schermo):
     for gx, gy in PERCORSO_GRIGLIA:
         rettangolo = pygame.Rect(gx * DIMENSIONE_CELLA, gy * DIMENSIONE_CELLA,
                                  DIMENSIONE_CELLA, DIMENSIONE_CELLA)
-        pygame.draw.rect(schermo, MARRONE_SENTIERO, rettangolo)
-        # Bordo sentiero
-        pygame.draw.rect(schermo, (100, 60, 20), rettangolo, 1)
 
 
 def disegna_preview_torre(schermo, griglia_x, griglia_y, valida):
     colore = VERDE_CHIARO if valida else ROSSO
-    superficie = pygame.Surface((DIMENSIONE_CELLA, DIMENSIONE_CELLA), pygame.SRCALPHA)
-    superficie.fill((*colore, 100))
+    superficie = pygame.Surface((DIMENSIONE_CELLA, DIMENSIONE_CELLA))
+    superficie.set_alpha(100)
+    superficie.fill(colore)
     schermo.blit(superficie, (griglia_x * DIMENSIONE_CELLA, griglia_y * DIMENSIONE_CELLA))
 
 
-def disegna_pannello_ui(schermo, soldi, vite, ondata, immagini, font_grande, font_piccolo):
-    # Sfondo pannello con gradiente simulato
-    pygame.draw.rect(schermo, (50, 50, 60), (800, 0, 200, ALTEZZA_SCHERMO))
-    pygame.draw.rect(schermo, (70, 70, 85), (802, 2, 196, ALTEZZA_SCHERMO - 4))
-    pygame.draw.line(schermo, (100, 100, 120), (800, 0), (800, ALTEZZA_SCHERMO), 2)
-
-    # Titolo
-    testo_titolo = font_grande.render("TOWER DEFENSE", True, GIALLO)
-    schermo.blit(testo_titolo, (800 + (200 - testo_titolo.get_width()) // 2, 8))
-    pygame.draw.line(schermo, GIALLO, (810, 36), (990, 36), 1)
-
-    # Soldi con icona moneta
-    img_moneta = immagini.get('moneta')
-    if img_moneta:
-        schermo.blit(img_moneta, (810, 44))
-    testo_soldi = font_grande.render(f"${soldi}", True, GIALLO)
-    schermo.blit(testo_soldi, (835, 44))
-
-    # Vite
-    testo_vite = font_grande.render(f"♥ {vite}", True, ROSSO)
-    schermo.blit(testo_vite, (810, 70))
-
-    # Ondata
-    testo_ondata = font_grande.render(f"Ondata {ondata}/10", True, BIANCO)
-    schermo.blit(testo_ondata, (810, 96))
+def disegna_pannello_ui(schermo, soldi, vite, ondata):
+    pygame.draw.rect(schermo, GRIGIO, (1000, 0, 220, ALTEZZA_SCHERMO))
+    font_grande = pygame.font.Font(None, 36)
+    testo_soldi  = font_grande.render(f"Soldi: ${soldi}", True, GIALLO)
+    testo_vite   = font_grande.render(f"Vite: {vite}",    True, ROSSO)
+    testo_ondata = font_grande.render(f"Ondata: {ondata}/10", True, BIANCO)
+    schermo.blit(testo_soldi,  (1010, 10))
+    schermo.blit(testo_vite,   (1010, 50))
+    schermo.blit(testo_ondata, (1010, 90))
 
 
-def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato,
-                            immagini, font):
+def disegna_pulsante_torre(schermo, tipo_torre, costo, pos_y, soldi, selezionato):
     if selezionato:
-        colore_sfondo = (200, 170, 0)
-        colore_bordo = GIALLO
+        colore = GIALLO
     elif soldi >= costo:
-        colore_sfondo = (40, 80, 40)
-        colore_bordo = VERDE_CHIARO
+        colore = VERDE_CHIARO
     else:
-        colore_sfondo = (60, 60, 60)
-        colore_bordo = GRIGIO
+        colore = GRIGIO
 
-    rettangolo = pygame.Rect(812, pos_y, 176, 58)
-    pygame.draw.rect(schermo, colore_sfondo, rettangolo, border_radius=6)
-    pygame.draw.rect(schermo, colore_bordo, rettangolo, 2, border_radius=6)
+    rettangolo = pygame.Rect(1010, pos_y, 190, 70)
+    pygame.draw.rect(schermo, colore, rettangolo)
+    pygame.draw.rect(schermo, NERO, rettangolo, 2)
 
-    # Icona torre
-    chiave = f"torre_{tipo_torre}"
-    img = immagini.get(chiave)
-    if img:
-        img_piccola = pygame.transform.scale(img, (36, 36))
-        schermo.blit(img_piccola, (rettangolo.x + 6, rettangolo.y + 11))
-
-    # Testo nome e costo
-    colore_testo = BIANCO if soldi >= costo else (130, 130, 130)
-    nomi = {'arciere': 'Arciere', 'magia': 'Magia', 'cannone': 'Cannone'}
-    testo_nome = font.render(nomi.get(tipo_torre, tipo_torre), True, colore_testo)
-    testo_costo = font.render(f"${costo}", True, GIALLO if soldi >= costo else (130, 130, 130))
-
-    schermo.blit(testo_nome, (rettangolo.x + 48, rettangolo.y + 10))
-    schermo.blit(testo_costo, (rettangolo.x + 48, rettangolo.y + 34))
+    font = pygame.font.Font(None, 30)
+    testo_nome  = font.render(tipo_torre.capitalize(), True, NERO)
+    testo_costo = font.render(f"${costo}", True, NERO)
+    schermo.blit(testo_nome,  (rettangolo.x + 12, rettangolo.y + 12))
+    schermo.blit(testo_costo, (rettangolo.x + 12, rettangolo.y + 42))
 
     return rettangolo
 
 
-def disegna_pulsante_ondata(schermo, ondata_in_corso, font):
+def disegna_pulsante_ondata(schermo, ondata_in_corso):
     if ondata_in_corso:
         return None
 
-    rettangolo = pygame.Rect(812, 360, 176, 50)
-    pygame.draw.rect(schermo, (20, 80, 160), rettangolo, border_radius=8)
-    pygame.draw.rect(schermo, BLU, rettangolo, 2, border_radius=8)
+    rettangolo = pygame.Rect(1010, 460, 190, 70)
+    pygame.draw.rect(schermo, BLU, rettangolo)
+    pygame.draw.rect(schermo, NERO, rettangolo, 2)
 
-    testo = font.render("▶  Avvia Ondata", True, BIANCO)
-    schermo.blit(testo, (rettangolo.x + (176 - testo.get_width()) // 2,
-                          rettangolo.y + (50 - testo.get_height()) // 2))
+    font = pygame.font.Font(None, 30)
+    testo = font.render("Avvia Ondata", True, BIANCO)
+    schermo.blit(testo, (rettangolo.x + 18, rettangolo.y + 24))
+
     return rettangolo
 
 
-def disegna_legenda(schermo, font_piccolo):
-    """Piccola legenda in basso nel pannello"""
-    y = 430
-    pygame.draw.line(schermo, (100, 100, 120), (810, y), (990, y), 1)
-    testo = font_piccolo.render("ESC = deseleziona torre", True, (160, 160, 160))
-    schermo.blit(testo, (810, y + 6))
-    testo2 = font_piccolo.render("R = riavvia (game over)", True, (160, 160, 160))
-    schermo.blit(testo2, (810, y + 22))
-
-
-def disegna_game_over(schermo, vittoria, font_grande, font_piccolo):
-    overlay = pygame.Surface((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 160))
+def disegna_game_over(schermo, vittoria):
+    overlay = pygame.Surface((LARGHEZZA_SCHERMO, ALTEZZA_SCHERMO))
+    overlay.set_alpha(128)
+    overlay.fill(NERO)
     schermo.blit(overlay, (0, 0))
 
-    if vittoria:
-        testo_principale = font_grande.render("🏆  VITTORIA!", True, GIALLO)
-        colore_box = (60, 100, 0)
-    else:
-        testo_principale = font_grande.render("💀  GAME OVER", True, ROSSO)
-        colore_box = (100, 0, 0)
+    font_grande  = pygame.font.Font(None, 80)
+    font_piccolo = pygame.font.Font(None, 40)
 
-    # Box centrale
-    box = pygame.Rect(LARGHEZZA_SCHERMO // 2 - 200, ALTEZZA_SCHERMO // 2 - 70, 400, 140)
-    pygame.draw.rect(schermo, colore_box, box, border_radius=12)
-    pygame.draw.rect(schermo, BIANCO, box, 3, border_radius=12)
+    if vittoria:
+        testo_principale = font_grande.render("VITTORIA!", True, GIALLO)
+    else:
+        testo_principale = font_grande.render("GAME OVER", True, ROSSO)
+
+    testo_riavvio = font_piccolo.render("Premi R per ricominciare", True, BIANCO)
 
     schermo.blit(testo_principale,
                  (LARGHEZZA_SCHERMO // 2 - testo_principale.get_width() // 2,
-                  ALTEZZA_SCHERMO // 2 - 50))
-
-    testo_riavvio = font_piccolo.render("Premi  R  per ricominciare", True, BIANCO)
+                  ALTEZZA_SCHERMO // 2 - 60))
     schermo.blit(testo_riavvio,
                  (LARGHEZZA_SCHERMO // 2 - testo_riavvio.get_width() // 2,
-                  ALTEZZA_SCHERMO // 2 + 20))
+                  ALTEZZA_SCHERMO // 2 + 30))
 
 
-def disegna_tutto(schermo, stato, pulsanti_torri, immagini,
-                  font_grande, font_medio, font_piccolo):
+def disegna_tutto(schermo, stato, pulsanti_torri, immagini, font_piccolo):
     disegna_sfondo(schermo)
     disegna_percorso(schermo)
 
@@ -754,40 +682,19 @@ def disegna_tutto(schermo, stato, pulsanti_torri, immagini,
     for proiettile in stato['proiettili']:
         disegna_proiettile(schermo, proiettile, immagini)
 
-    # Animazioni monete
     disegna_animazioni(schermo, stato['animazioni'], immagini, font_piccolo)
 
-    # Pannello UI
-    disegna_pannello_ui(schermo, stato['soldi'], stato['vite'], stato['ondata'],
-                        immagini, font_medio, font_piccolo)
+    disegna_pannello_ui(schermo, stato['soldi'], stato['vite'], stato['ondata'])
 
-    # Preview torre
     if stato['torre_selezionata']:
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        if mouse_x < 800:
+        if mouse_x < 1000:
             griglia_x, griglia_y = pixel_a_griglia(mouse_x, mouse_y)
             valida = puo_piazzare_torre(stato, griglia_x, griglia_y)
             disegna_preview_torre(schermo, griglia_x, griglia_y, valida)
 
-    # Pulsanti torri
-    pulsanti_torri['arciere'] = disegna_pulsante_torre(
-        schermo, 'arciere', 100, 130, stato['soldi'],
-        stato['torre_selezionata'] == 'arciere', immagini, font_medio)
-    pulsanti_torri['magia'] = disegna_pulsante_torre(
-        schermo, 'magia', 150, 198, stato['soldi'],
-        stato['torre_selezionata'] == 'magia', immagini, font_medio)
-    pulsanti_torri['cannone'] = disegna_pulsante_torre(
-        schermo, 'cannone', 200, 266, stato['soldi'],
-        stato['torre_selezionata'] == 'cannone', immagini, font_medio)
-
-    pulsante_ondata = disegna_pulsante_ondata(schermo, stato['ondata_in_corso'], font_medio)
-
-    disegna_legenda(schermo, font_piccolo)
-
     if stato['game_over']:
-        disegna_game_over(schermo, stato['vittoria'], font_grande, font_piccolo)
-
-    return pulsante_ondata
+        disegna_game_over(schermo, stato['vittoria'])
 
 
 # =============================================================================
@@ -811,7 +718,7 @@ def gestisci_click(stato, mouse_x, mouse_y, pulsanti_torri, pulsante_ondata):
         avvia_ondata(stato)
         return
 
-    if mouse_x < 800 and stato['torre_selezionata']:
+    if mouse_x < 1000 and stato['torre_selezionata']:
         griglia_x, griglia_y = pixel_a_griglia(mouse_x, mouse_y)
         if piazza_torre(stato, griglia_x, griglia_y):
             stato['torre_selezionata'] = None
@@ -827,12 +734,8 @@ def main():
     pygame.display.set_caption("Tower Defense")
     clock = pygame.time.Clock()
 
-    # Font
-    font_grande = pygame.font.Font(None, 48)
-    font_medio  = pygame.font.Font(None, 28)
     font_piccolo = pygame.font.Font(None, 20)
 
-    # Carica immagini
     immagini = carica_immagini()
 
     stato = inizializza_gioco()
@@ -858,8 +761,19 @@ def main():
 
         aggiorna_gioco(stato)
 
-        pulsante_ondata = disegna_tutto(schermo, stato, pulsanti_torri, immagini,
-                                        font_grande, font_medio, font_piccolo)
+        disegna_tutto(schermo, stato, pulsanti_torri, immagini, font_piccolo)
+
+        pulsanti_torri['arciere'] = disegna_pulsante_torre(
+            schermo, 'arciere', 100, 140, stato['soldi'],
+            stato['torre_selezionata'] == 'arciere')
+        pulsanti_torri['magia'] = disegna_pulsante_torre(
+            schermo, 'magia', 150, 230, stato['soldi'],
+            stato['torre_selezionata'] == 'magia')
+        pulsanti_torri['cannone'] = disegna_pulsante_torre(
+            schermo, 'cannone', 200, 320, stato['soldi'],
+            stato['torre_selezionata'] == 'cannone')
+
+        pulsante_ondata = disegna_pulsante_ondata(schermo, stato['ondata_in_corso'])
 
         pygame.display.flip()
         clock.tick(FPS)

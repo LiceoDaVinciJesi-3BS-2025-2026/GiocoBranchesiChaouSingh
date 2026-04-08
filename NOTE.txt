@@ -1,0 +1,11 @@
+- il gioco è semplice e divertente
+
+- NON ci sono spiegazioni per giocare
+
+- in tre è molto più difficile che in due...
+
+- funzioni OK, ma TUTTO il codice nella __init__ (anche se ci sono 10 file .py)
+
+- Non riesco a capire le impostazioni: non vedo modi di modificarle.
+
+- Files... ???
